@@ -1,59 +1,43 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase/server";
-import type { RegistrationRequest } from "@/lib/types";
+import { updateRequestStatus } from "@/lib/admin/actions";
 
-export const dynamic = "force-dynamic";
+const STATUSES = ["new", "sent", "contacted", "closed"] as const;
 
-export default async function AdminPage() {
-  const sb = createServerSupabase();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) redirect("/login");
+const BADGE: Record<string, string> = {
+  new: "bg-amber-100 text-amber-700",
+  sent: "bg-blue-100 text-blue-700",
+  contacted: "bg-violet-100 text-violet-700",
+  closed: "bg-green-100 text-green-700",
+};
 
-  // RLS: admins only can read these rows. Non-admins get empty / no access.
-  const { data: profile } = await sb
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
+type Row = {
+  id: number;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+  club: { name: string; slug: string } | null;
+};
 
-  if (!profile || profile.role !== "admin") {
-    return (
-      <div className="container-x py-16">
-        <h1 className="text-2xl font-bold">Δεν έχεις πρόσβαση</h1>
-        <p className="mt-2 text-slate-600">
-          Ο λογαριασμός {user.email} δεν είναι διαχειριστής. Ζήτησε από έναν admin να σου δώσει ρόλο
-          <code className="mx-1 rounded bg-slate-100 px-1">admin</code> στον πίνακα profiles.
-        </p>
-        <form action="/auth/signout" method="post" className="mt-6">
-          <button className="text-sm text-brand hover:underline">Αποσύνδεση</button>
-        </form>
-      </div>
-    );
-  }
-
-  const { data: requests } = await sb
+export default async function AdminRequests() {
+  const supabase = createServerSupabase();
+  const { data } = await supabase
     .from("registration_requests")
-    .select("*")
+    .select("*, club:clubs(name, slug)")
     .order("created_at", { ascending: false })
-    .limit(100);
-
-  const list = (requests as RegistrationRequest[]) ?? [];
+    .limit(200);
+  const rows = (data as Row[]) ?? [];
 
   return (
-    <div className="container-x py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-900">Πίνακας διαχείρισης</h1>
-        <Link href="/" className="text-sm text-brand hover:underline">Στο site →</Link>
-      </div>
+    <div>
+      <h1 className="text-2xl font-bold text-slate-900">Αιτήματα εγγραφής ({rows.length})</h1>
+      <p className="mt-1 text-sm text-slate-500">
+        Αλλαγή κατάστασης και αποστολή email στον ενδιαφερόμενο.
+      </p>
 
-      <h2 className="mt-8 text-lg font-semibold text-slate-800">
-        Αιτήματα εγγραφής ({list.length})
-      </h2>
-
-      <div className="mt-4 overflow-x-auto rounded-xl border bg-white">
+      <div className="mt-5 overflow-x-auto rounded-xl border bg-white">
         <table className="w-full text-sm">
           <thead className="border-b bg-slate-50 text-left text-slate-500">
             <tr>
@@ -62,18 +46,19 @@ export default async function AdminPage() {
               <th className="px-4 py-3">Επικοινωνία</th>
               <th className="px-4 py-3">Σύλλογος</th>
               <th className="px-4 py-3">Κατάσταση</th>
+              <th className="px-4 py-3">Ενέργειες</th>
             </tr>
           </thead>
           <tbody>
-            {list.length === 0 && (
+            {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                   Δεν υπάρχουν αιτήματα ακόμη.
                 </td>
               </tr>
             )}
-            {list.map((r) => (
-              <tr key={r.id} className="border-b last:border-0">
+            {rows.map((r) => (
+              <tr key={r.id} className="border-b align-top last:border-0">
                 <td className="px-4 py-3 text-slate-500">
                   {new Date(r.created_at).toLocaleDateString("el-GR")}
                 </td>
@@ -81,23 +66,46 @@ export default async function AdminPage() {
                 <td className="px-4 py-3 text-slate-600">
                   <div>{r.email}</div>
                   {r.phone && <div className="text-xs text-slate-400">{r.phone}</div>}
+                  {r.message && <div className="mt-1 max-w-xs text-xs text-slate-400">{r.message}</div>}
                 </td>
-                <td className="px-4 py-3 text-slate-600">#{r.club_id ?? "—"}</td>
+                <td className="px-4 py-3 text-slate-600">{r.club?.name ?? "—"}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE[r.status] ?? "bg-slate-100 text-slate-600"}`}>
                     {r.status}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-col gap-2">
+                    <form action={updateRequestStatus} className="flex items-center gap-1">
+                      <input type="hidden" name="id" value={r.id} />
+                      <select
+                        name="status"
+                        defaultValue={r.status}
+                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                      >
+                        {STATUSES.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                      <button className="rounded bg-slate-800 px-2 py-1 text-xs text-white hover:bg-slate-700">
+                        OK
+                      </button>
+                    </form>
+                    <a
+                      href={`mailto:${r.email}?subject=${encodeURIComponent(
+                        `Εγγραφή στον σύλλογο ${r.club?.name ?? ""}`
+                      )}`}
+                      className="text-xs text-brand hover:underline"
+                    >
+                      ✉ Email στον ενδιαφερόμενο
+                    </a>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      <p className="mt-6 text-sm text-slate-500">
-        Επόμενα: CRUD για συλλόγους & αθλήματα (πρόσθεση pilates/yoga ως κατηγορία wellness),
-        αλλαγή κατάστασης αιτημάτων, αποστολή email.
-      </p>
     </div>
   );
 }
