@@ -1,5 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
-import type { Club, Sport, Category } from "@/lib/types";
+import type { Club, Sport, Category, ClubTeam } from "@/lib/types";
 
 const PAGE_SIZE = 24;
 
@@ -17,6 +17,17 @@ export async function getCategories(): Promise<Category[]> {
   const sb = createPublicClient();
   const { data } = await sb.from("categories").select("*").order("id");
   return data ?? [];
+}
+
+export async function getClubTeams(clubId: number): Promise<ClubTeam[]> {
+  const sb = createPublicClient();
+  const { data } = await sb
+    .from("club_teams")
+    .select("*")
+    .eq("club_id", clubId)
+    .order("sort_order")
+    .order("id");
+  return (data as ClubTeam[]) ?? [];
 }
 
 export async function getSportsBySlugs(

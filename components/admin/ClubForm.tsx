@@ -59,6 +59,57 @@ export default function ClubForm({
         <input name="website" defaultValue={club?.website ?? ""} className={`w-full ${field}`} placeholder="https://…" />
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={label}>Facebook</label>
+          <input name="facebook" defaultValue={club?.socials?.facebook ?? ""} className={`w-full ${field}`} placeholder="https://facebook.com/…" />
+        </div>
+        <div>
+          <label className={label}>Instagram</label>
+          <input name="instagram" defaultValue={club?.socials?.instagram ?? ""} className={`w-full ${field}`} placeholder="https://instagram.com/…" />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className={label}>Τύπος συλλόγου</label>
+          <select name="club_type" defaultValue={club?.club_type ?? ""} className={`w-full ${field}`}>
+            <option value="">—</option>
+            <option value="Ψυχαγωγικό">Ψυχαγωγικό</option>
+            <option value="Ακαδημία">Ακαδημία</option>
+            <option value="Ανταγωνιστικό">Ανταγωνιστικό</option>
+          </select>
+        </div>
+        <div>
+          <label className={label}>Υπεύθυνος επικοινωνίας</label>
+          <input name="contact_name" defaultValue={club?.contact_name ?? ""} className={`w-full ${field}`} />
+        </div>
+        <div>
+          <label className={label}>Ρόλος υπευθύνου</label>
+          <input name="contact_role" defaultValue={club?.contact_role ?? ""} className={`w-full ${field}`} placeholder="π.χ. Υπεύθυνος εγγραφών" />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className={label}>Έναρξη εγγραφών</label>
+          <input name="registration_opens_at" type="date" defaultValue={club?.registration_opens_at ?? ""} className={`w-full ${field}`} />
+        </div>
+        <div>
+          <label className={label}>Ετήσιο κόστος από (€)</label>
+          <input name="annual_fee_min" type="number" defaultValue={club?.annual_fee_min ?? ""} className={`w-full ${field}`} />
+        </div>
+        <div>
+          <label className={label}>έως (€)</label>
+          <input name="annual_fee_max" type="number" defaultValue={club?.annual_fee_max ?? ""} className={`w-full ${field}`} />
+        </div>
+      </div>
+
+      <div>
+        <label className={label}>Link online εγγραφής (αν δεν είναι myTeam)</label>
+        <input name="registration_url" defaultValue={club?.registration_url ?? ""} className={`w-full ${field}`} placeholder="https://…" />
+      </div>
+
       <div>
         <label className={label}>Περιγραφή (landing page)</label>
         <textarea name="description" rows={4} defaultValue={club?.description ?? ""} className={`w-full ${field}`} />

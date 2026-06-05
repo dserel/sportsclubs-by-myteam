@@ -39,6 +39,28 @@ export type Club = {
   lat: number | null;
   lng: number | null;
   is_published: boolean;
+  // profile (phase 1)
+  contact_name: string | null;
+  contact_role: string | null;
+  club_type: string | null; // Ψυχαγωγικό | Ακαδημία | Ανταγωνιστικό
+  registration_url: string | null;
+  registration_opens_at: string | null;
+  annual_fee_min: number | null;
+  annual_fee_max: number | null;
+  socials: { facebook?: string; instagram?: string; [k: string]: string | undefined } | null;
+};
+
+export type ClubTeam = {
+  id: number;
+  club_id: number;
+  name: string;
+  gender: string | null;
+  age_group: string | null;
+  sport_id: number | null;
+  registration_opens_at: string | null;
+  registration_url: string | null;
+  notes: string | null;
+  sort_order: number;
 };
 
 export type MyteamClub = {

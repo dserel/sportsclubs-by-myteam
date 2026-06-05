@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ClubForm from "@/components/admin/ClubForm";
 import SportsEditor from "@/components/admin/SportsEditor";
+import TeamsEditor from "@/components/admin/TeamsEditor";
 import { updateClub } from "@/lib/admin/actions";
 import { createServerSupabase } from "@/lib/supabase/server";
-import type { Club, Sport, Category } from "@/lib/types";
+import type { Club, Sport, Category, ClubTeam } from "@/lib/types";
 
 export default async function EditClubPage({
   params,
@@ -14,15 +15,17 @@ export default async function EditClubPage({
   searchParams: { saved?: string };
 }) {
   const supabase = createServerSupabase();
-  const [{ data }, { data: sportsData }, { data: catsData }] = await Promise.all([
+  const [{ data }, { data: sportsData }, { data: catsData }, { data: teamsData }] = await Promise.all([
     supabase.from("clubs").select("*").eq("id", Number(params.id)).maybeSingle(),
     supabase.from("sports").select("*").eq("is_active", true).order("name"),
     supabase.from("categories").select("*").order("id"),
+    supabase.from("club_teams").select("*").eq("club_id", Number(params.id)).order("sort_order").order("id"),
   ]);
   if (!data) notFound();
   const club = data as Club;
   const sports = (sportsData as Sport[]) ?? [];
   const categories = (catsData as Category[]) ?? [];
+  const teams = (teamsData as ClubTeam[]) ?? [];
   const currentIds = new Set(
     sports.filter((s) => (club.sport_slugs ?? []).includes(s.slug)).map((s) => s.id)
   );
@@ -48,7 +51,8 @@ export default async function EditClubPage({
 
       <ClubForm action={updateClub} club={club} />
 
-      <div className="mt-8 max-w-2xl">
+      <div className="mt-8 max-w-2xl space-y-6">
+        <TeamsEditor clubId={club.id} teams={teams} sports={sports} />
         <SportsEditor
           clubId={club.id}
           sports={sports}

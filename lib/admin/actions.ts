@@ -11,6 +11,13 @@ function str(fd: FormData, key: string): string | null {
   return s === "" ? null : s;
 }
 
+function num(fd: FormData, key: string): number | null {
+  const s = str(fd, key);
+  if (s == null) return null;
+  const n = Number(s.replace(",", "."));
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
 async function uniqueSlug(
   supabase: any,
   table: string,
@@ -60,7 +67,24 @@ function clubPayloadFromForm(fd: FormData) {
     myteam_slug: str(fd, "myteam_slug"),
     has_myteam: fd.get("has_myteam") === "on",
     is_published: fd.get("is_published") === "on",
+    contact_name: str(fd, "contact_name"),
+    contact_role: str(fd, "contact_role"),
+    club_type: str(fd, "club_type"),
+    registration_url: str(fd, "registration_url"),
+    registration_opens_at: str(fd, "registration_opens_at"),
+    annual_fee_min: num(fd, "annual_fee_min"),
+    annual_fee_max: num(fd, "annual_fee_max"),
+    socials: buildSocials(fd),
   };
+}
+
+function buildSocials(fd: FormData): Record<string, string> | null {
+  const fb = str(fd, "facebook");
+  const ig = str(fd, "instagram");
+  const out: Record<string, string> = {};
+  if (fb) out.facebook = fb;
+  if (ig) out.instagram = ig;
+  return Object.keys(out).length ? out : null;
 }
 
 export async function updateClub(fd: FormData) {
@@ -152,6 +176,41 @@ export async function updateClubSports(fd: FormData) {
   const { data: club } = await supabase.from("clubs").select("slug").eq("id", clubId).single();
   revalidatePath(`/admin/clubs/${clubId}`);
   if (club?.slug) revalidatePath(`/sullogoi/${club.slug}`);
+}
+
+/* ---------------- club teams ---------------- */
+async function revalidateClub(supabase: any, clubId: number) {
+  const { data } = await supabase.from("clubs").select("slug").eq("id", clubId).single();
+  revalidatePath(`/admin/clubs/${clubId}`);
+  if (data?.slug) revalidatePath(`/sullogoi/${data.slug}`);
+}
+
+export async function addClubTeam(fd: FormData) {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return;
+  const clubId = Number(fd.get("club_id"));
+  const name = str(fd, "name");
+  if (!clubId || !name) return;
+  await supabase.from("club_teams").insert({
+    club_id: clubId,
+    name,
+    gender: str(fd, "gender"),
+    age_group: str(fd, "age_group"),
+    sport_id: fd.get("sport_id") ? Number(fd.get("sport_id")) : null,
+    registration_opens_at: str(fd, "registration_opens_at"),
+    registration_url: str(fd, "registration_url"),
+    notes: str(fd, "notes"),
+  });
+  await revalidateClub(supabase, clubId);
+}
+
+export async function deleteClubTeam(fd: FormData) {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return;
+  const id = Number(fd.get("id"));
+  const clubId = Number(fd.get("club_id"));
+  await supabase.from("club_teams").delete().eq("id", id);
+  await revalidateClub(supabase, clubId);
 }
 
 export async function toggleSportActive(fd: FormData) {
