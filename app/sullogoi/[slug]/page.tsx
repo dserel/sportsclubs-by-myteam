@@ -19,9 +19,8 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const res = await getClubBySlug(params.slug);
-  if (!res) return {};
-  const { club } = res;
+  const club = await getClubBySlug(params.slug);
+  if (!club) return {};
   const place = [club.city, club.region].filter(Boolean).join(", ");
   const title = club.name;
   const description = `${club.name}${place ? ` — ${place}` : ""}. ${
@@ -36,9 +35,8 @@ export async function generateMetadata({
 }
 
 export default async function ClubPage({ params }: { params: { slug: string } }) {
-  const res = await getClubBySlug(params.slug);
-  if (!res) notFound();
-  const { club, myteam } = res;
+  const club = await getClubBySlug(params.slug);
+  if (!club) notFound();
   const sports = await getSportsBySlugs(club.sport_slugs ?? []);
   const place = [club.address, club.city, club.region].filter(Boolean).join(", ");
 
@@ -64,8 +62,8 @@ export default async function ClubPage({ params }: { params: { slug: string } })
     ...(sports.length ? { sport: sports.map((s) => s.name) } : {}),
   };
 
-  const myteamUrl = myteam?.slug
-    ? `${MYTEAM_BASE}/create-profile?club=${encodeURIComponent(myteam.slug)}&registration=1`
+  const myteamUrl = club.myteam_slug
+    ? `${MYTEAM_BASE}/create-profile?club=${encodeURIComponent(club.myteam_slug)}&registration=1`
     : MYTEAM_BASE;
 
   return (

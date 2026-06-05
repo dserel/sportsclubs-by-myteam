@@ -75,17 +75,28 @@ export default function ClubForm({
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex flex-wrap items-center gap-6">
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" name="is_published" defaultChecked={club?.is_published ?? true} />
           Δημοσιευμένο
         </label>
-        {isNew && (
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" name="has_myteam" />
-            Έχει λογαριασμό myTeam
-          </label>
-        )}
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" name="has_myteam" defaultChecked={club?.has_myteam ?? false} />
+          Έχει λογαριασμό myTeam
+        </label>
+      </div>
+
+      <div>
+        <label className={label}>myTeam slug (για το κουμπί εγγραφής)</label>
+        <input
+          name="myteam_slug"
+          defaultValue={club?.myteam_slug ?? ""}
+          className={`w-full ${field}`}
+          placeholder="π.χ. kifisia-fc"
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          Το κουμπί θα οδηγεί στο app.my-team.co/create-profile?club=&lt;slug&gt;&amp;registration=1
+        </p>
       </div>
 
       <button className="rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark">

@@ -1,5 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
-import type { Club, Sport, Category, MyteamClub } from "@/lib/types";
+import type { Club, Sport, Category } from "@/lib/types";
 
 const PAGE_SIZE = 24;
 
@@ -36,9 +36,7 @@ export async function getSportBySlug(slug: string): Promise<Sport | null> {
   return data;
 }
 
-export async function getClubBySlug(
-  slug: string
-): Promise<{ club: Club; myteam: MyteamClub | null } | null> {
+export async function getClubBySlug(slug: string): Promise<Club | null> {
   const sb = createPublicClient();
   const { data: club } = await sb
     .from("clubs")
@@ -46,18 +44,7 @@ export async function getClubBySlug(
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();
-  if (!club) return null;
-
-  let myteam: MyteamClub | null = null;
-  if (club.myteam_club_id) {
-    const { data } = await sb
-      .from("myteam_clubs")
-      .select("*")
-      .eq("id", club.myteam_club_id)
-      .maybeSingle();
-    myteam = data;
-  }
-  return { club: club as Club, myteam };
+  return (club as Club) ?? null;
 }
 
 export async function listClubsBySport(

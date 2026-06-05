@@ -57,6 +57,8 @@ function clubPayloadFromForm(fd: FormData) {
     description: str(fd, "description"),
     logo_url: str(fd, "logo_url"),
     cover_url: str(fd, "cover_url"),
+    myteam_slug: str(fd, "myteam_slug"),
+    has_myteam: fd.get("has_myteam") === "on",
     is_published: fd.get("is_published") === "on",
   };
 }

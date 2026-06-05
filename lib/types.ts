@@ -24,6 +24,7 @@ export type Club = {
   sport_slugs: string[];
   has_myteam: boolean;
   myteam_club_id: number | null;
+  myteam_slug: string | null;
   city: string | null;
   region: string | null;
   address: string | null;
