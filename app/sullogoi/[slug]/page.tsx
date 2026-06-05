@@ -63,7 +63,9 @@ export default async function ClubPage({ params }: { params: { slug: string } })
     ...(club.sport_slugs?.length ? { sport: club.sport_slugs } : {}),
   };
 
-  const myteamUrl = myteam?.slug ? `${MYTEAM_BASE}/${myteam.slug}` : MYTEAM_BASE;
+  const myteamUrl = myteam?.slug
+    ? `${MYTEAM_BASE}/create-profile?club=${encodeURIComponent(myteam.slug)}&registration=1`
+    : MYTEAM_BASE;
 
   return (
     <div className="container-x py-10">
