@@ -1,5 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
-import type { Club, Sport, Category, ClubTeam } from "@/lib/types";
+import type { Club, Sport, Category, ClubTeam, ClubAchievement, ClubPhoto } from "@/lib/types";
 
 const PAGE_SIZE = 24;
 
@@ -28,6 +28,28 @@ export async function getClubTeams(clubId: number): Promise<ClubTeam[]> {
     .order("sort_order")
     .order("id");
   return (data as ClubTeam[]) ?? [];
+}
+
+export async function getClubAchievements(clubId: number): Promise<ClubAchievement[]> {
+  const sb = createPublicClient();
+  const { data } = await sb
+    .from("club_achievements")
+    .select("*")
+    .eq("club_id", clubId)
+    .order("year", { ascending: false, nullsFirst: false })
+    .order("sort_order");
+  return (data as ClubAchievement[]) ?? [];
+}
+
+export async function getClubPhotos(clubId: number): Promise<ClubPhoto[]> {
+  const sb = createPublicClient();
+  const { data } = await sb
+    .from("club_photos")
+    .select("*")
+    .eq("club_id", clubId)
+    .order("sort_order")
+    .order("id");
+  return (data as ClubPhoto[]) ?? [];
 }
 
 export async function getSportsBySlugs(

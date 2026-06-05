@@ -50,6 +50,22 @@ export type Club = {
   socials: { facebook?: string; instagram?: string; [k: string]: string | undefined } | null;
 };
 
+export type ClubAchievement = {
+  id: number;
+  club_id: number;
+  title: string;
+  year: number | null;
+  sort_order: number;
+};
+
+export type ClubPhoto = {
+  id: number;
+  club_id: number;
+  path: string;
+  url: string;
+  sort_order: number;
+};
+
 export type ClubTeam = {
   id: number;
   club_id: number;

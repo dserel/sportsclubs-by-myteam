@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import RegistrationForm from "@/components/RegistrationForm";
-import { getClubBySlug, getSportsBySlugs, getClubTeams } from "@/lib/queries";
+import { getClubBySlug, getSportsBySlugs, getClubTeams, getClubAchievements, getClubPhotos } from "@/lib/queries";
 
 export const revalidate = 86400;
 export const dynamicParams = true;
@@ -44,9 +44,11 @@ function feeText(min: number | null, max: number | null): string | null {
 export default async function ClubPage({ params }: { params: { slug: string } }) {
   const club = await getClubBySlug(params.slug);
   if (!club) notFound();
-  const [sports, teams] = await Promise.all([
+  const [sports, teams, achievements, photos] = await Promise.all([
     getSportsBySlugs(club.sport_slugs ?? []),
     getClubTeams(club.id),
+    getClubAchievements(club.id),
+    getClubPhotos(club.id),
   ]);
 
   const place = [club.address, club.city, club.region].filter(Boolean).join(", ");
@@ -159,6 +161,33 @@ export default async function ClubPage({ params }: { params: { slug: string } })
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {photos.length > 0 && (
+            <div className="mt-8">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Φωτογραφίες</h2>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {photos.map((p) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={p.id} src={p.url} alt={club.name} className="h-32 w-full rounded-lg object-cover sm:h-36" />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {achievements.length > 0 && (
+            <div className="mt-8">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Επιτεύγματα</h2>
+              <ul className="space-y-1.5">
+                {achievements.map((a) => (
+                  <li key={a.id} className="flex items-baseline gap-2 text-slate-700">
+                    <span aria-hidden>🏆</span>
+                    {a.year && <span className="text-sm font-medium text-slate-400">{a.year}</span>}
+                    <span>{a.title}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

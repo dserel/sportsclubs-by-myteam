@@ -213,6 +213,50 @@ export async function deleteClubTeam(fd: FormData) {
   await revalidateClub(supabase, clubId);
 }
 
+/* ---------------- achievements ---------------- */
+export async function addAchievement(fd: FormData) {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return;
+  const clubId = Number(fd.get("club_id"));
+  const title = str(fd, "title");
+  if (!clubId || !title) return;
+  await supabase.from("club_achievements").insert({
+    club_id: clubId,
+    title,
+    year: num(fd, "year"),
+  });
+  await revalidateClub(supabase, clubId);
+}
+
+export async function deleteAchievement(fd: FormData) {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return;
+  const id = Number(fd.get("id"));
+  const clubId = Number(fd.get("club_id"));
+  await supabase.from("club_achievements").delete().eq("id", id);
+  await revalidateClub(supabase, clubId);
+}
+
+/* ---------------- photos ---------------- */
+export async function addClubPhoto(clubId: number, path: string, url: string) {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return;
+  if (!clubId || !path || !url) return;
+  await supabase.from("club_photos").insert({ club_id: clubId, path, url });
+  await revalidateClub(supabase, clubId);
+}
+
+export async function deleteClubPhoto(fd: FormData) {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return;
+  const id = Number(fd.get("id"));
+  const clubId = Number(fd.get("club_id"));
+  const path = String(fd.get("path") || "");
+  if (path) await supabase.storage.from("club-photos").remove([path]);
+  await supabase.from("club_photos").delete().eq("id", id);
+  await revalidateClub(supabase, clubId);
+}
+
 export async function toggleSportActive(fd: FormData) {
   const { supabase, isAdmin } = await requireAdmin();
   if (!isAdmin) return;
