@@ -21,8 +21,8 @@ export default function ClubCard({ club }: { club: Club }) {
         </p>
       )}
       {club.sport_slugs?.length > 0 && (
-        <p className="mt-2 line-clamp-1 text-xs text-slate-400">
-          {club.sport_slugs.slice(0, 4).join(" · ")}
+        <p className="mt-2 text-xs text-slate-400">
+          {club.sport_slugs.length} {club.sport_slugs.length === 1 ? "άθλημα" : "αθλήματα"}
         </p>
       )}
     </Link>

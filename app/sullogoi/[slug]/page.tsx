@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import RegistrationForm from "@/components/RegistrationForm";
-import { getClubBySlug } from "@/lib/queries";
+import { getClubBySlug, getSportsBySlugs } from "@/lib/queries";
 
 export const revalidate = 86400;
 // 6.500+ σελίδες: παράγονται on-demand (ISR) και cache-άρονται.
@@ -39,6 +39,7 @@ export default async function ClubPage({ params }: { params: { slug: string } })
   const res = await getClubBySlug(params.slug);
   if (!res) notFound();
   const { club, myteam } = res;
+  const sports = await getSportsBySlugs(club.sport_slugs ?? []);
   const place = [club.address, club.city, club.region].filter(Boolean).join(", ");
 
   const jsonLd = {
@@ -60,7 +61,7 @@ export default async function ClubPage({ params }: { params: { slug: string } })
           },
         }
       : {}),
-    ...(club.sport_slugs?.length ? { sport: club.sport_slugs } : {}),
+    ...(sports.length ? { sport: sports.map((s) => s.name) } : {}),
   };
 
   const myteamUrl = myteam?.slug
@@ -99,19 +100,19 @@ export default async function ClubPage({ params }: { params: { slug: string } })
             <p className="mt-6 leading-relaxed text-slate-700">{club.description}</p>
           )}
 
-          {club.sport_slugs?.length > 0 && (
+          {sports.length > 0 && (
             <div className="mt-6">
               <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
                 Αθλήματα
               </h2>
               <div className="flex flex-wrap gap-2">
-                {club.sport_slugs.map((s) => (
+                {sports.map((s) => (
                   <Link
-                    key={s}
-                    href={`/athlimata/${s}`}
+                    key={s.slug}
+                    href={`/athlimata/${s.slug}`}
                     className="rounded-full border bg-white px-3 py-1 text-sm text-slate-700 hover:border-brand hover:text-brand"
                   >
-                    {s}
+                    {s.name}
                   </Link>
                 ))}
               </div>

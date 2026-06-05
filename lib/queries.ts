@@ -19,6 +19,17 @@ export async function getCategories(): Promise<Category[]> {
   return data ?? [];
 }
 
+export async function getSportsBySlugs(
+  slugs: string[]
+): Promise<{ name: string; slug: string }[]> {
+  if (!slugs || slugs.length === 0) return [];
+  const sb = createPublicClient();
+  const { data } = await sb.from("sports").select("name, slug").in("slug", slugs);
+  const map = new Map((data ?? []).map((s: { name: string; slug: string }) => [s.slug, s.name]));
+  // preserve original order, fall back to slug if missing
+  return slugs.map((slug) => ({ slug, name: map.get(slug) ?? slug }));
+}
+
 export async function getSportBySlug(slug: string): Promise<Sport | null> {
   const sb = createPublicClient();
   const { data } = await sb.from("sports").select("*").eq("slug", slug).maybeSingle();
