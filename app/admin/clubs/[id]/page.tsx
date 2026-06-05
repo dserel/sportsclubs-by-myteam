@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ClubForm from "@/components/admin/ClubForm";
+import SportsEditor from "@/components/admin/SportsEditor";
 import { updateClub } from "@/lib/admin/actions";
 import { createServerSupabase } from "@/lib/supabase/server";
-import type { Club } from "@/lib/types";
+import type { Club, Sport, Category } from "@/lib/types";
 
 export default async function EditClubPage({
   params,
@@ -13,9 +14,18 @@ export default async function EditClubPage({
   searchParams: { saved?: string };
 }) {
   const supabase = createServerSupabase();
-  const { data } = await supabase.from("clubs").select("*").eq("id", Number(params.id)).maybeSingle();
+  const [{ data }, { data: sportsData }, { data: catsData }] = await Promise.all([
+    supabase.from("clubs").select("*").eq("id", Number(params.id)).maybeSingle(),
+    supabase.from("sports").select("*").eq("is_active", true).order("name"),
+    supabase.from("categories").select("*").order("id"),
+  ]);
   if (!data) notFound();
   const club = data as Club;
+  const sports = (sportsData as Sport[]) ?? [];
+  const categories = (catsData as Category[]) ?? [];
+  const currentIds = new Set(
+    sports.filter((s) => (club.sport_slugs ?? []).includes(s.slug)).map((s) => s.id)
+  );
 
   return (
     <div>
@@ -36,11 +46,16 @@ export default async function EditClubPage({
         <p className="mt-4 rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700">Αποθηκεύτηκε.</p>
       )}
 
-      {club.sport_slugs?.length > 0 && (
-        <p className="mt-3 text-xs text-slate-400">Αθλήματα: {club.sport_slugs.join(", ")}</p>
-      )}
-
       <ClubForm action={updateClub} club={club} />
+
+      <div className="mt-8 max-w-2xl">
+        <SportsEditor
+          clubId={club.id}
+          sports={sports}
+          categories={categories}
+          currentIds={currentIds}
+        />
+      </div>
     </div>
   );
 }

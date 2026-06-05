@@ -67,12 +67,15 @@ export async function updateClub(fd: FormData) {
   const id = Number(fd.get("id"));
   const payload = clubPayloadFromForm(fd);
   if (!payload.name) return;
-  await supabase
+  const { data } = await supabase
     .from("clubs")
     .update({ ...payload, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("slug")
+    .single();
   revalidatePath(`/admin/clubs/${id}`);
   revalidatePath("/admin/clubs");
+  if (data?.slug) revalidatePath(`/sullogoi/${data.slug}`); // φρεσκάρει τη δημόσια σελίδα
   redirect("/admin/clubs?saved=1");
 }
 
@@ -89,6 +92,7 @@ export async function createClub(fd: FormData) {
     .select("id")
     .single();
   revalidatePath("/admin/clubs");
+  revalidatePath(`/sullogoi/${slug}`);
   redirect(data?.id ? `/admin/clubs/${data.id}?saved=1` : "/admin/clubs");
 }
 
@@ -111,6 +115,41 @@ export async function upsertSport(fd: FormData) {
   }
   revalidatePath("/admin/sports");
   revalidatePath("/athlimata");
+}
+
+/* ---------------- club <-> sports ---------------- */
+export async function updateClubSports(fd: FormData) {
+  const { supabase, isAdmin } = await requireAdmin();
+  if (!isAdmin) return;
+  const clubId = Number(fd.get("club_id"));
+  const sportIds = fd
+    .getAll("sport_ids")
+    .map((v) => Number(v))
+    .filter((n) => !Number.isNaN(n));
+
+  // resolve slugs for the selected sports (denormalized array on clubs)
+  const { data: rows } = await supabase
+    .from("sports")
+    .select("id, slug")
+    .in("id", sportIds.length ? sportIds : [-1]);
+  const slugs = (rows ?? []).map((r: { slug: string }) => r.slug);
+
+  await supabase
+    .from("clubs")
+    .update({ sport_slugs: slugs, updated_at: new Date().toISOString() })
+    .eq("id", clubId);
+
+  // keep the normalized join table in sync
+  await supabase.from("club_sports").delete().eq("club_id", clubId);
+  if (sportIds.length) {
+    await supabase
+      .from("club_sports")
+      .insert(sportIds.map((sid) => ({ club_id: clubId, sport_id: sid })));
+  }
+
+  const { data: club } = await supabase.from("clubs").select("slug").eq("id", clubId).single();
+  revalidatePath(`/admin/clubs/${clubId}`);
+  if (club?.slug) revalidatePath(`/sullogoi/${club.slug}`);
 }
 
 export async function toggleSportActive(fd: FormData) {
