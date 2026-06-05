@@ -38,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </Link>
             <nav className="flex items-center gap-5 text-sm font-medium text-slate-600">
+              <Link href="/anazitisi" className="hover:text-brand">Αναζήτηση</Link>
               <Link href="/athlimata" className="hover:text-brand">Αθλήματα</Link>
               <Link href="/perioxes" className="hover:text-brand">Περιοχές</Link>
             </nav>

@@ -96,6 +96,52 @@ export async function searchClubs(
   return { clubs: (data as Club[]) ?? [], total: count ?? 0 };
 }
 
+export type ClubFilters = {
+  q?: string;
+  sport?: string;
+  region?: string;
+  type?: string;
+  age?: string;
+  page?: number;
+};
+
+export async function getAgeGroups(): Promise<string[]> {
+  const sb = createPublicClient();
+  const { data } = await sb.from("club_teams").select("age_group").not("age_group", "is", null).limit(5000);
+  const set = new Set<string>();
+  (data ?? []).forEach((r: { age_group: string | null }) => r.age_group && set.add(r.age_group));
+  return Array.from(set).sort();
+}
+
+export async function searchClubsFiltered(
+  f: ClubFilters
+): Promise<{ clubs: Club[]; total: number }> {
+  const sb = createPublicClient();
+  const page = Math.max(0, f.page ?? 0);
+  const from = page * PAGE_SIZE;
+
+  // age filter resolves to a set of club ids via club_teams
+  let ageClubIds: number[] | null = null;
+  if (f.age) {
+    const { data } = await sb.from("club_teams").select("club_id").eq("age_group", f.age).limit(10000);
+    ageClubIds = Array.from(new Set((data ?? []).map((r: { club_id: number }) => r.club_id)));
+    if (ageClubIds.length === 0) return { clubs: [], total: 0 };
+  }
+
+  let query = sb.from("clubs").select("*", { count: "exact" }).eq("is_published", true);
+  if (f.q && f.q.trim()) query = query.ilike("name", `%${f.q.trim()}%`);
+  if (f.sport) query = query.contains("sport_slugs", [f.sport]);
+  if (f.region) query = query.eq("region", f.region);
+  if (f.type) query = query.eq("club_type", f.type);
+  if (ageClubIds) query = query.in("id", ageClubIds);
+
+  const { data, count } = await query
+    .order("has_myteam", { ascending: false })
+    .order("name")
+    .range(from, from + PAGE_SIZE - 1);
+  return { clubs: (data as Club[]) ?? [], total: count ?? 0 };
+}
+
 export async function listRegions(): Promise<string[]> {
   const sb = createPublicClient();
   const { data } = await sb
